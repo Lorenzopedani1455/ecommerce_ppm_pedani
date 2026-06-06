@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <title>E-commerce - Lorenzo Pedani</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 20px; background-color: #f9f9f9; color: #333; }
+        .container { max-width: 850px; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1, h3 { color: #2c3e50; }
+        .product { border: 1px solid #eee; padding: 15px; margin: 10px 0; border-radius: 5px; background-color: #fff; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; background-color: #3498db; color: white; font-weight: bold; }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+        input, textarea, select { padding: 8px; margin: 5px; width: calc(100% - 20px); max-width: 300px; border: 1px solid #ccc; border-radius: 4px; }
+        .manager-btn { background-color: #2c3e50 !important; color: white !important; }
+        .manager-btn:hover { background-color: #1a252f !important; }
+        .danger-btn { background-color: #e74c3c !important; }
+        .danger-btn:hover { background-color: #c0392b !important; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>E-commerce API - Lorenzo Pedani</h1>
+
+        <!-- Form di Login -->
+        <div id="loginForm">
+            <h3>Accesso Utenti</h3>
+            <input type="text" id="username" placeholder="Username">
+            <input type="password" id="password" placeholder="Password">
+            <br>
+            <button onclick="login()">Accedi</button>
+            <button onclick="showRegisterForm()" style="background-color: #2ecc71;">Registrati</button>
+            <hr>
+            <button onclick="showProductsNL()" style="background-color: #95a5a6;">Continua come Ospite</button>
+        </div>
+
+        <!-- Form di Registrazione -->
+        <div id="registerForm" style="display:none;">
+            <h3>Nuova Registrazione</h3>
+            <input type="text" id="reg_username" placeholder="Username">
+            <input type="email" id="reg_email" placeholder="Email">
+            <input type="password" id="reg_password" placeholder="Password">
+            <input type="password" id="reg_password2" placeholder="Conferma Password">
+            <br>
+            <button onclick="register()" style="background-color: #2ecc71;">Conferma Registrazione</button>
+            <button onclick="backToLogin()" style="background-color: #95a5a6;">Torna al Login</button>
+        </div>
+
+        <!-- Sezione Prodotti (Utente Loggato) -->
+        <div id="productsSection" style="display:none; position: relative;">
+            <div style="position: absolute; top: -10px; right: 0;">
+                <button onclick="viewAccount()" style="background-color: #f39c12;">Il Mio Account</button>
+                <button id="managerButton" onclick="viewManagerArea()" class="manager-btn" style="display: none;">
+                    Area Store Manager
+                </button>
+            </div>
+            <h3>Catalogo Prodotti</h3>
+            <div id="products"></div>
+            <hr>
+            <button onclick="viewCart()">Apri Carrello</button>
+            <button onclick="viewOrders()">I Miei Ordini</button>
+            <button onclick="logout()" class="danger-btn">Esci</button>
+        </div>
+
+        <!-- Sezione Prodotti (Ospite) -->
+        <div id="productsSectionNL" style="display:none;">
+            <h3>Catalogo Prodotti (Sola Lettura)</h3>
+            <div id="productsNL"></div>
+            <button onclick="backToLogin()" style="background-color: #95a5a6;">Torna al Login per Acquistare</button>
+        </div>
+
+        <!-- Carrello -->
+        <div id="cartSection" style="display:none;">
+            <h3>Il Tuo Carrello</h3>
+            <div id="cart"></div>
+            <hr>
+            <div id="cartTotal" style="font-size: 1.2em; color: #27ae60;"></div>
+            <hr>
+            <button onclick="createOrder()" style="background-color: #2ecc71;">Procedi all'Ordine</button>
+            <button onclick="backToProducts()" style="background-color: #95a5a6;">Torna agli Acquisti</button>
+        </div>
+
+        <!-- Conferma Ordine -->
+        <div id="orderConfirmationSection" style="display:none;">
+            <h3>Conferma Spedizione</h3>
+            <p id="orderTotalDisplay"></p>
+            <label for="shippingAddressInput">Indirizzo di Spedizione:</label><br>
+            <textarea id="shippingAddressInput" rows="3" placeholder="Es: Via Roma 1, Milano"></textarea><br>
+            <button onclick="authorizeOrder()" style="background-color: #2ecc71;">Conferma Ordine e Paga</button>
+            <button onclick="backToCart()" style="background-color: #95a5a6;">Torna al Carrello</button>
+        </div>
+
+        <!-- Storico Ordini -->
+        <div id="ordersSection" style="display:none;">
+            <h3>Storico Ordini</h3>
+            <div id="ordersList"></div>
+            <button onclick="backToProducts()">Torna al Catalogo</button>
+        </div>
+
+        <!-- Account -->
+        <div id="accountSection" style="display:none; padding: 20px; background: #fdfdfd; border: 1px solid #eee; border-radius: 8px;">
+            <h3>Impostazioni Account</h3>
+            <label>Nuova Password:</label>
+            <input type="password" id="newPassword" />
+            <label>Conferma Nuova Password:</label>
+            <input type="password" id="confirmPassword" />
+            <br>
+            <button onclick="modifyPassword()">Aggiorna Password</button>
+            <hr>
+            <button onclick="deactivateAccount()" class="danger-btn">Disattiva Account Definitivamente</button>
+            <br><br>
+            <button onclick="backToProducts()" style="background-color: #95a5a6;">Torna al Catalogo</button>
+        </div>
+
+        <!-- Store Manager Area -->
+        <div id="managerSection" style="display:none; padding: 20px; border: 2px solid #2c3e50; border-radius: 8px;">
+            <h3>Pannello Store Manager</h3>
+            <button onclick="manageUsers()" class="manager-btn">Gestione Utenti</button>
+            <button onclick="manageOrders()" class="manager-btn">Gestione Ordini</button>
+            <br><br>
+            <button onclick="backToProducts()" style="background-color: #95a5a6;">Esci dal Pannello</button>
+        </div>
+
+        <!-- Gestione Utenti (Manager) -->
+        <div id="manageUsersSection" style="display:none;">
+            <h3>Amministrazione Utenti</h3>
+            <div id="usersList"></div>
+            <button onclick="backToManagerArea()">Torna al Pannello Manager</button>
+        </div>
+
+        <!-- Gestione Ordini (Manager) -->
+        <div id="manageOrdersSection" style="display:none;">
+            <h3>Amministrazione Ordini</h3>
+            <div id="ordersAdminList"></div>
+            <button onclick="backToManagerArea()">Torna al Pannello Manager</button>
+        </div>
+    </div>
+
+    <script>
+    // --- CONFIGURAZIONE BASE ---
+    const API_BASE = 'http://127.0.0.1:8000/api';
+    let token = localStorage.getItem('token');
+    let isStoreManager = false;
+
+    // --- FUNZIONI DI AUTENTICAZIONE E PROFILO ---
+    async function fetchUserProfile() {
+        try {
+            const response = await fetch(`${API_BASE}/users/profile/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const user = await response.json();
+                isStoreManager = user.is_store_manager;
+            }
+        } catch (error) {
+            console.error('Errore nel recupero del profilo:', error);
+        }
+    }
+
+    async function login() {
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+
+        try {
+            const response = await fetch(`${API_BASE}/token/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, password })
+            });
+            const data = await response.json();
+
+            if (response.ok) {
+                token = data.access;
+                localStorage.setItem('token', token);
+                showProducts();
+            } else {
+                alert('Errore di Login: verifica le credenziali.');
+            }
+        } catch (error) {
+            alert('Errore di connessione: ' + error.message);
+        }
+    }
+
+    async function register() {
+        const username = document.getElementById('reg_username').value;
+        const email = document.getElementById('reg_email').value;
+        const password = document.getElementById('reg_password').value;
+        const password2 = document.getElementById('reg_password2').value;
+
+        if (password !== password2) {
+            alert("Le password non coincidono!");
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/users/register/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username, email, password, password2 })
+            });
+
+            if (response.ok) {
+                alert("Registrazione completata! Ora puoi effettuare il login.");
+                backToLogin();
+            } else {
+                const data = await response.json();
+                alert('Registrazione fallita: ' + JSON.stringify(data));
+            }
+        } catch (error) {
+            alert('Errore durante la registrazione: ' + error.message);
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem('token');
+        location.reload();
+    }
+
+    // --- FUNZIONI CATALOGO PRODOTTI ---
+    async function loadProducts() {
+        try {
+            const response = await fetch(`${API_BASE}/shop/products/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                alert('Sessione scaduta o errore di caricamento.');
+                logout();
+                return;
+            }
+
+            await fetchUserProfile();
+
+            if (isStoreManager) {
+                document.getElementById('managerButton').style.display = 'inline-block';
+            } else {
+                document.getElementById('managerButton').style.display = 'none';
+            }
+
+            const products = await response.json();
+            const productsDiv = document.getElementById('products');
+            productsDiv.innerHTML = '';
+
+            (Array.isArray(products) ? products : products.results).forEach(product => {
+                const price = Number(product.price);
+                let priceHtml = `<p><strong>Prezzo: €${price.toFixed(2)}</strong></p>`;
+
+                if (product.is_discounted && product.discount) {
+                    const discount = Number(product.discount);
+                    const discountedPrice = price * (1 - discount / 100);
+                    priceHtml = `
+                        <p>
+                            Prezzo: <s>€${price.toFixed(2)}</s>
+                            <span style="color:#e74c3c; font-weight:bold;"> -${discount}% </span><br>
+                            <strong style="color:#27ae60; font-size:1.1em;">€${discountedPrice.toFixed(2)}</strong>
+                        </p>
+                    `;
+                }
+
+                const stock = product.quantity_available || 0;
+                const disabledAttr = stock === 0 ? 'disabled' : '';
+                const stockText = stock === 0 ? '<span style="color:red;">Esaurito</span>' : `Disponibili: ${stock}`;
+
+                productsDiv.innerHTML += `
+                    <div class="product">
+                        <h4>${product.name}</h4>
+                        <p>${product.description}</p>
+                        ${priceHtml}
+                        <p>${stockText}</p>
+                        <button onclick="addToCart(${product.id})" ${disabledAttr}>Aggiungi al Carrello</button>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            alert('Errore nel caricamento del catalogo: ' + error.message);
+        }
+    }
+
+    async function loadProductsNL() {
+        try {
+            const response = await fetch(`${API_BASE}/shop/products/`);
+            if (!response.ok) return;
+            
+            const products = await response.json();
+            const productsDiv = document.getElementById('productsNL');
+            productsDiv.innerHTML = '';
+            
+            (Array.isArray(products) ? products : products.results).forEach(product => {
+                const price = Number(product.price);
+                let priceHtml = `<p><strong>Prezzo: €${price.toFixed(2)}</strong></p>`;
+
+                if (product.is_discounted && product.discount) {
+                    const discount = Number(product.discount);
+                    const discountedPrice = price * (1 - discount / 100);
+                    priceHtml = `
+                        <p>
+                            Prezzo: <s>€${price.toFixed(2)}</s>
+                            <span style="color:#e74c3c;"> -${discount}% </span><br>
+                            <strong style="color:#27ae60;">€${discountedPrice.toFixed(2)}</strong>
+                        </p>
+                    `;
+                }
+
+                productsDiv.innerHTML += `
+                    <div class="product">
+                        <h4>${product.name}</h4>
+                        <p>${product.description}</p>
+                        ${priceHtml}
+                        <p>Disponibilità: ${product.quantity_available || 0}</p>
+                    </div>
+                `;
+            });
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // --- FUNZIONI CARRELLO ---
+    async function viewCart() {
+        try {
+            const response = await fetch(`${API_BASE}/shop/cart/me/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) return;
+
+            const cart = await response.json();
+            const cartDiv = document.getElementById('cart');
+            cartDiv.innerHTML = '';
+
+            if (!cart.items || cart.items.length === 0) {
+                cartDiv.innerHTML = '<p>Il tuo carrello è vuoto.</p>';
+                document.getElementById('cartTotal').innerHTML = '';
+                document.getElementById('productsSection').style.display = 'none';
+                document.getElementById('cartSection').style.display = 'block';
+                return;
+            }
+
+            let total = 0;
+            cart.items.forEach(item => {
+                const product = item.product;
+                let unitPrice = product.price;
+                if (product.is_discounted && product.discount) {
+                    unitPrice = product.price * (1 - product.discount / 100);
+                }
+                total += unitPrice * item.quantity;
+
+                cartDiv.innerHTML += `
+                    <div class="product" style="display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h4>${product.name}</h4>
+                            <p>Quantità: ${item.quantity} | Prezzo unitario: €${Number(unitPrice).toFixed(2)}</p>
+                        </div>
+                        <button onclick="removeFromCart(${cart.id}, ${item.id})" class="danger-btn">Rimuovi</button>
+                    </div>
+                `;
+            });
+
+            document.getElementById('cartTotal').innerHTML = `<strong>Totale Provvisorio: €${total.toFixed(2)}</strong>`;
+            document.getElementById('productsSection').style.display = 'none';
+            document.getElementById('cartSection').style.display = 'block';
+
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function addToCart(productId) {
+        try {
+            const cartResponse = await fetch(`${API_BASE}/shop/cart/me/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const cart = await cartResponse.json();
+
+            const response = await fetch(`${API_BASE}/shop/cart/${cart.id}/add_item/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ product_id: productId, quantity: 1 }),
+            });
+
+            if (response.ok) alert('Prodotto aggiunto al carrello!');
+            else alert('Errore durante l\'aggiunta al carrello.');
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function removeFromCart(cartId, cartItemId) {
+        try {
+            await fetch(`${API_BASE}/shop/cart/${cartId}/remove_item/`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ cart_item_id: cartItemId }),
+            });
+            await viewCart();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // --- FUNZIONI ORDINI ---
+    function createOrder() {
+        const cartDiv = document.getElementById('cart');
+        if (cartDiv.innerHTML.includes('vuoto')) return;
+        
+        document.getElementById('orderTotalDisplay').innerHTML = document.getElementById('cartTotal').innerHTML;
+        document.getElementById('cartSection').style.display = 'none';
+        document.getElementById('orderConfirmationSection').style.display = 'block';
+    }
+
+    async function authorizeOrder() {
+        const shippingAddress = document.getElementById('shippingAddressInput').value;
+        if (!shippingAddress.trim()) {
+            alert('Inserisci un indirizzo di spedizione valido.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/shop/orders/`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ shipping_address: shippingAddress }),
+            });
+
+            if (response.ok) {
+                alert('Ordine confermato con successo!');
+                document.getElementById('shippingAddressInput').value = '';
+                backToProducts();
+            } else {
+                const errorData = await response.json();
+                alert('Errore nella creazione dell\'ordine: ' + (errorData.detail || 'Verifica la disponibilità dei prodotti.'));
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function viewOrders() {
+        try {
+            const response = await fetch(`${API_BASE}/shop/orders/user/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            const orders = await response.json();
+            const ordersListDiv = document.getElementById('ordersList');
+            ordersListDiv.innerHTML = '';
+
+            if (orders.length === 0) {
+                ordersListDiv.innerHTML = '<p>Non hai ancora effettuato ordini.</p>';
+            } else {
+                orders.forEach(order => {
+                    let itemsHtml = order.items.map(i => `<li>${i.product.name} (x${i.quantity}) - €${i.price}</li>`).join('');
+                    ordersListDiv.innerHTML += `
+                        <div class="product">
+                            <h4>Ordine #${order.id}</h4>
+                            <ul>${itemsHtml}</ul>
+                            <p><strong>Spedizione:</strong> ${order.shipping_address}</p>
+                            <p><strong>Stato:</strong> <span style="text-transform: uppercase; color: #2980b9;">${order.status}</span></p>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('productsSection').style.display = 'none';
+            document.getElementById('ordersSection').style.display = 'block';
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // --- GESTIONE ACCOUNT ---
+    async function modifyPassword() {
+        const newPassword = document.getElementById('newPassword').value;
+        const confirmPassword = document.getElementById('confirmPassword').value;
+
+        if (newPassword !== confirmPassword) {
+            alert('Le password non coincidono.');
+            return;
+        }
+
+        // Il backend non ha ancora l'endpoint per cambiare password implementato nella view,
+        // ma la UI è predisposta. Mostriamo un avviso.
+        alert("La funzione di cambio password sarà disponibile a breve!");
+    }
+
+    async function deactivateAccount() {
+        if (!confirm("Sei sicuro di voler disattivare il tuo account?")) return;
+        alert("La funzione di disattivazione sarà disponibile a breve!");
+    }
+
+    // --- AREA STORE MANAGER ---
+    async function manageUsers() {
+        document.getElementById('managerSection').style.display = 'none';
+        document.getElementById('manageUsersSection').style.display = 'block';
+        // Mock per UI, per recuperare gli utenti serve l'endpoint admin su users.
+        document.getElementById('usersList').innerHTML = '<p>Gestione utenti dal Pannello Admin di Django (http://127.0.0.1:8000/admin/)</p>';
+    }
+
+    async function manageOrders() {
+        try {
+            const response = await fetch(`${API_BASE}/shop/orders/admin/`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const orders = await response.json();
+            const ordersAdminListDiv = document.getElementById('ordersAdminList');
+            ordersAdminListDiv.innerHTML = '';
+
+            if (orders.length === 0) {
+                ordersAdminListDiv.innerHTML = '<p>Nessun ordine presente.</p>';
+            } else {
+                orders.forEach(order => {
+                    let itemsHtml = order.items.map(i => `<li>${i.product.name} (x${i.quantity})</li>`).join('');
+                    ordersAdminListDiv.innerHTML += `
+                        <div class="product">
+                            <h4>Ordine #${order.id}</h4>
+                            <p><strong>Acquirente:</strong> ${order.user.username}</p>
+                            <p><strong>Spedizione:</strong> ${order.shipping_address}</p>
+                            <ul>${itemsHtml}</ul>
+                            <label><strong>Stato:</strong></label>
+                            <select id="status-${order.id}">
+                                <option value="pending" ${order.status === 'pending' ? 'selected' : ''}>In Attesa</option>
+                                <option value="confirmed" ${order.status === 'confirmed' ? 'selected' : ''}>Confermato</option>
+                                <option value="shipped" ${order.status === 'shipped' ? 'selected' : ''}>Spedito</option>
+                                <option value="delivered" ${order.status === 'delivered' ? 'selected' : ''}>Consegnato</option>
+                                <option value="cancelled" ${order.status === 'cancelled' ? 'selected' : ''}>Annullato</option>
+                            </select>
+                            <button onclick="updateOrderStatus(${order.id})" style="background-color: #2ecc71;">Aggiorna Stato</button>
+                            <button onclick="deleteOrder(${order.id})" class="danger-btn">Elimina Ordine</button>
+                        </div>
+                    `;
+                });
+            }
+            document.getElementById('managerSection').style.display = 'none';
+            document.getElementById('manageOrdersSection').style.display = 'block';
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function updateOrderStatus(orderId) {
+        const newStatus = document.getElementById(`status-${orderId}`).value;
+        try {
+            await fetch(`${API_BASE}/shop/orders/${orderId}/`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            alert('Stato ordine aggiornato!');
+            manageOrders();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    async function deleteOrder(orderId) {
+        if (!confirm('Eliminare definitivamente questo ordine?')) return;
+        try {
+            await fetch(`${API_BASE}/shop/orders/${orderId}/`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            manageOrders();
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    // --- NAVIGAZIONE UI ---
+    function showProducts() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('productsSection').style.display = 'block';
+        loadProducts();
+    }
+
+    function showProductsNL() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('productsSectionNL').style.display = 'block';
+        loadProductsNL();
+    }
+
+    function showRegisterForm() {
+        document.getElementById('loginForm').style.display = 'none';
+        document.getElementById('registerForm').style.display = 'block';
+    }
+
+    function backToLogin() {
+        document.getElementById('registerForm').style.display = 'none';
+        document.getElementById('productsSectionNL').style.display = 'none';
+        document.getElementById('loginForm').style.display = 'block';
+    }
+
+    function backToProducts() {
+        document.getElementById('cartSection').style.display = 'none';
+        document.getElementById('ordersSection').style.display = 'none';
+        document.getElementById('orderConfirmationSection').style.display = 'none';
+        document.getElementById('accountSection').style.display = 'none';
+        document.getElementById('managerSection').style.display = 'none';
+        document.getElementById('productsSection').style.display = 'block';
+        loadProducts();
+    }
+
+    function backToCart() {
+        document.getElementById('orderConfirmationSection').style.display = 'none';
+        document.getElementById('cartSection').style.display = 'block';
+    }
+
+    function viewAccount() {
+        document.getElementById('productsSection').style.display = 'none';
+        document.getElementById('accountSection').style.display = 'block';
+    }
+
+    function viewManagerArea() {
+        document.getElementById('productsSection').style.display = 'none';
+        document.getElementById('managerSection').style.display = 'block';
+    }
+
+    function backToManagerArea() {
+        document.getElementById('manageUsersSection').style.display = 'none';
+        document.getElementById('manageOrdersSection').style.display = 'none';
+        document.getElementById('managerSection').style.display = 'block';
+    }
+
+    // Esegui al caricamento se l'utente ha già il token salvato
+    if (token) {
+        showProducts();
+    }
+    </script>
+</body>
+</html>

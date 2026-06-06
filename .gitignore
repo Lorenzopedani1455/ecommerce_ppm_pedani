@@ -1,0 +1,15 @@
+# Ambienti virtuali (NON CARICARE)
+venv/
+env/
+
+# File di sistema e cache di Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# File di sistema Mac OS
+.DS_Store
+
+#  db.sqlite3 NON è ignorato in questo progetto 
